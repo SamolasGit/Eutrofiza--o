@@ -1,58 +1,47 @@
 export default class Particle {
-  constructor(x, y, type) {
+  constructor(x, y, vx, vy, size) {
     this.x = x;
     this.y = y;
-    this.type = type;
-
-    this.size = type === "algae" ? 5 : 3;
-    this.cooldown = 0;
-
-    this.vx = (Math.random() - 0.5) * 1;
-    this.vy = (Math.random() - 0.5) * 1;
+    this.vx = vx;
+    this.vy = vy;
+    this.size = size;
+    this.alpha = 1;
+    this.fadeRate = 0.0033; // 5 seconds fade at 60fps
+    this.alive = true;
+    this.color = "#87CEEB"; // Sky blue for oxygen
   }
 
-  update(canvas) {
-    const top = 200;
-    const bottom = 300;
-    const left = 0;
-    const right = canvas.width;
-
+  update() {
     this.x += this.vx;
     this.y += this.vy;
 
-    // LEFT
-    if (this.x < left + this.size) {
-      this.x = left + this.size;
-      this.vx *= -1;
-    }
+    // Apply slight upward float instead of gravity
+    this.vy -= 0.02;
 
-    // RIGHT
-    if (this.x > right - this.size) {
-      this.x = right - this.size;
-      this.vx *= -1;
-    }
+    // Fade out
+    this.alpha -= this.fadeRate;
 
-    // TOP (IMPORTANT FIX)
-    if (this.y < top + this.size) {
-      this.y = top + this.size;
-      this.vy *= -1;
+    if (this.alpha <= 0) {
+      this.alive = false;
     }
-
-    // BOTTOM
-    if (this.y > bottom - this.size) {
-      this.y = bottom - this.size;
-      this.vy *= -1;
-    }
-
-    if (this.cooldown > 0) this.cooldown--;
   }
 
   draw(ctx) {
-    if (this.type === "algae") ctx.fillStyle = "#2E8B57";
-    else ctx.fillStyle = "yellow";
+    if (!this.alive) return;
 
+    // Draw bubble
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    const rgbaColor = `rgba(135, 206, 235, ${this.alpha})`;
+    ctx.fillStyle = rgbaColor;
     ctx.fill();
+    ctx.closePath();
+
+    // Draw O2 text
+    ctx.fillStyle = `rgba(34, 197, 94, ${this.alpha * 0.8})`;
+    ctx.font = "bold 10px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("O2", this.x, this.y);
   }
 }
