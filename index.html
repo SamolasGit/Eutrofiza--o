@@ -4,26 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
-    <link rel="stylesheet" href="sea.css" />
-    <link rel="stylesheet" href="sky.css" />
-    <link rel="stylesheet" href="ui.css" />
+    <link rel="stylesheet" href="styles/sea.css" />
+    <link rel="stylesheet" href="styles/sky.css" />
+    <link rel="stylesheet" href="styles/ui.css" />
   </head>
   <body>
     <button id="darkModeToggle" class="dark-mode-btn">
-      <img id="modeIcon" src="moon.svg" alt="Toggle dark mode" />
+      <img id="modeIcon" src="images/moon.svg" alt="Toggle dark mode" />
     </button>
     <button id="manualButton" aria-label="Open manual" aria-expanded="false">
-      <img src="manual.svg" alt="Manual" />
+      <img src="images/manual.svg" alt="Manual" />
     </button>
     <button
       id="sunrayToggle"
       aria-label="Toggle sunray visibility"
       aria-pressed="true"
     >
-      <img src="sunray.svg" alt="Sunray visibility" />
+      <img src="images/sunray.svg" alt="Sunray visibility" />
     </button>
     <button id="resetButton" aria-label="Reset simulation">
-      <img src="reset.svg" alt="Reset simulation" />
+      <img src="images/reset.svg" alt="Reset simulation" />
     </button>
     <div
       id="oxygenMeter"
@@ -50,8 +50,12 @@
         <li><strong>Manual button:</strong> open/close this panel.</li>
         <li><strong>Reset button:</strong> clear algae, plants, and O2.</li>
         <li><strong>Day:</strong> plants grow if touched by sunlight.</li>
-        <li><strong>Night:</strong> plants pause shrink/death from no light.</li>
-        <li><strong>O2 bubbles:</strong> bounce in water and expire after 60s.</li>
+        <li>
+          <strong>Night:</strong> plants pause shrink/death from no light.
+        </li>
+        <li>
+          <strong>O2 bubbles:</strong> bounce in water and expire after 60s.
+        </li>
       </ul>
     </aside>
     <section>
@@ -61,6 +65,6 @@
       <div class="wave wave3"></div>
       <div class="wave wave4"></div>
     </section>
-    <script type="module" src="main.js"></script>
+    <script type="module" src="js/main.js"></script>
   </body>
 </html>
