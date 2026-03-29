@@ -5,24 +5,43 @@ export default class Particle {
     this.vx = vx;
     this.vy = vy;
     this.size = size;
-    this.alpha = 1;
-    this.fadeRate = 0.0033; // 5 seconds fade at 60fps
+    this.mass = Math.max(1, this.size * this.size * 0.02);
+    this.alpha = 0.95;
     this.alive = true;
+    this.ageSeconds = 0;
+    this.maxLifetimeSeconds = 60;
     this.color = "#87CEEB"; // Sky blue for oxygen
   }
 
-  update() {
-    this.x += this.vx;
-    this.y += this.vy;
+  update(canvasWidth, floorY, waterTopY, deltaTime) {
+    if (!this.alive) return;
 
-    // Apply slight upward float instead of gravity
-    this.vy -= 0.02;
-
-    // Fade out
-    this.alpha -= this.fadeRate;
-
-    if (this.alpha <= 0) {
+    this.ageSeconds += deltaTime;
+    if (this.ageSeconds >= this.maxLifetimeSeconds) {
       this.alive = false;
+      return;
+    }
+
+    // Keep existing velocity units while staying frame-rate independent.
+    const frameScale = Math.min(3, deltaTime * 60);
+    this.x += this.vx * frameScale;
+    this.y += this.vy * frameScale;
+
+    // Always bounce inside the water volume (surface -> sand top).
+    if (this.x - this.size <= 0) {
+      this.x = this.size;
+      this.vx = Math.abs(this.vx); // elastic wall bounce
+    } else if (this.x + this.size >= canvasWidth) {
+      this.x = canvasWidth - this.size;
+      this.vx = -Math.abs(this.vx); // elastic wall bounce
+    }
+
+    if (this.y - this.size <= waterTopY) {
+      this.y = waterTopY + this.size;
+      this.vy = Math.abs(this.vy); // elastic wall bounce
+    } else if (this.y + this.size >= floorY) {
+      this.y = floorY - this.size;
+      this.vy = -Math.abs(this.vy); // elastic wall bounce
     }
   }
 

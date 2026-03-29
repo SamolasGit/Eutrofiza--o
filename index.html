@@ -12,6 +12,48 @@
     <button id="darkModeToggle" class="dark-mode-btn">
       <img id="modeIcon" src="moon.svg" alt="Toggle dark mode" />
     </button>
+    <button id="manualButton" aria-label="Open manual" aria-expanded="false">
+      <img src="manual.svg" alt="Manual" />
+    </button>
+    <button
+      id="sunrayToggle"
+      aria-label="Toggle sunray visibility"
+      aria-pressed="true"
+    >
+      <img src="sunray.svg" alt="Sunray visibility" />
+    </button>
+    <button id="resetButton" aria-label="Reset simulation">
+      <img src="reset.svg" alt="Reset simulation" />
+    </button>
+    <div
+      id="oxygenMeter"
+      role="progressbar"
+      aria-label="Floating oxygen level"
+      aria-valuemin="0"
+      aria-valuemax="20"
+      aria-valuenow="0"
+    >
+      <div id="oxygenMeterBadge">O2</div>
+      <div id="oxygenMeterTrack">
+        <div id="oxygenMeterFill"></div>
+      </div>
+    </div>
+    <aside id="manualPanel" aria-hidden="true">
+      <div class="manual-header">
+        <h2>Manual</h2>
+        <button id="closeManual" aria-label="Close manual">x</button>
+      </div>
+      <ul>
+        <li><strong>Left click:</strong> add floating algae.</li>
+        <li><strong>Right click:</strong> plant a rooted plant.</li>
+        <li><strong>Moon/Sun button:</strong> toggle day and night.</li>
+        <li><strong>Manual button:</strong> open/close this panel.</li>
+        <li><strong>Reset button:</strong> clear algae, plants, and O2.</li>
+        <li><strong>Day:</strong> plants grow if touched by sunlight.</li>
+        <li><strong>Night:</strong> plants pause shrink/death from no light.</li>
+        <li><strong>O2 bubbles:</strong> bounce in water and expire after 60s.</li>
+      </ul>
+    </aside>
     <section>
       <canvas></canvas>
       <div class="wave wave1"></div>

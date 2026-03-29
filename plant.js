@@ -6,15 +6,22 @@ export default class Plant {
     this.canvasHeight = canvasHeight;
     this.baseHeight = 8;
     this.height = this.baseHeight;
-    this.maxHeight = 110 + Math.random() * 20;
+    this.maxHeight = 200 + Math.random() * 20;
     this.minHeight = 2;
-    this.width = 8;
-    this.growthRate = 1.2;
+    this.width = 16;
+    this.growthRate = 60;
+    this.shrinkRate = 14;
+    this.noLightGracePeriod = 20;
+    this.noLightTimer = 0;
     this.health = 100;
     this.alive = true;
     this.color = "#22C55E";
     this.maxGrowthReached = false;
-    this.particleEmitCounter = 0;
+    this.particleEmitTimer = 0;
+    this.lightContact = false;
+    this.swayPhase = Math.random() * Math.PI * 4;
+    this.swaySpeed = 0.9 + Math.random() * 0.7;
+    this.swayAmplitude = 4.2 + Math.random() * 2.2;
   }
 
   get y() {
@@ -22,36 +29,58 @@ export default class Plant {
     return this.canvasHeight - this.height;
   }
 
-  update(plantArray, particles, time) {
+  update(
+    plantArray,
+    particles,
+    time,
+    deltaTime,
+    hasLight,
+    isNightMode = false,
+  ) {
     if (!this.alive) return;
 
-    // Growth mechanics - random fluctuation
-    const randomGrowth =
-      (Math.sin(time * 2 + this.x) * 0.5 + 0.5) * this.growthRate;
+    this.lightContact = hasLight;
 
-    if (this.height < this.maxHeight) {
-      this.height += randomGrowth;
-      if (this.height >= this.maxHeight) {
-        this.height = this.maxHeight;
-        this.maxGrowthReached = true;
+    if (hasLight) {
+      this.noLightTimer = 0;
+
+      const growthPulse = 0.8 + 0.2 * (Math.sin(time * 3 + this.x * 0.03) + 1);
+      if (this.height < this.maxHeight) {
+        this.height += this.growthRate * growthPulse * deltaTime;
+        if (this.height >= this.maxHeight) {
+          this.height = this.maxHeight;
+          this.maxGrowthReached = true;
+        }
+      }
+    } else {
+      if (isNightMode) {
+        // Night pauses starvation; plants should not shrink/die from lack of light.
+        this.noLightTimer = 0;
+      } else {
+        this.noLightTimer += deltaTime;
+
+        if (this.noLightTimer >= this.noLightGracePeriod) {
+          this.height -= this.shrinkRate * deltaTime;
+          this.health -= 10 * deltaTime;
+          this.maxGrowthReached = false;
+        }
       }
     }
 
-    // Produce oxygen particles when at max growth
-    if (this.maxGrowthReached) {
-      this.particleEmitCounter++;
-      if (this.particleEmitCounter > 300) {
+    // Produce oxygen particles when at max growth and illuminated
+    if (this.maxGrowthReached && hasLight) {
+      this.particleEmitTimer += deltaTime;
+      if (this.particleEmitTimer >= 2) {
         this.emitOxygenParticles(particles);
-        this.particleEmitCounter = 0;
+        this.particleEmitTimer = 0;
       }
     } else {
-      // Shrink over time if not at max growth (simulating nutrient depletion)
-      this.height -= 0.05;
-      this.health -= 0.2;
+      this.particleEmitTimer = 0;
     }
 
     // Death condition
     if (this.height <= this.minHeight) {
+      this.height = this.minHeight;
       this.alive = false;
     }
 
@@ -74,36 +103,101 @@ export default class Plant {
   emitOxygenParticles(particles) {
     // Emit 1 oxygen particle from the top
     const angle = Math.random() * Math.PI * 2;
-    const speed = 0.1 + Math.random() * 0.4;
+    const speed = 0.32 + Math.random() * 0.64;
     const vx = Math.cos(angle) * speed;
-    const vy = -Math.sin(angle) * speed - 0.3; // Gentle upward bias
+    const vy = -Math.sin(angle) * speed - 0.34; // Slightly stronger upward bias
 
     particles.push(
       new Particle(this.x, this.y, vx, vy, 10 + Math.random() * 2),
     );
   }
 
-  draw(ctx) {
+  drawWavyStemPath(ctx, baseX, baseY, topY, halfWidth, midX, topX) {
+    const midY = topY + (baseY - topY) * 0.55;
+    const topRound = halfWidth * 0.85;
+
+    ctx.beginPath();
+    ctx.moveTo(baseX - halfWidth, baseY);
+    ctx.quadraticCurveTo(
+      midX - halfWidth * 1.15,
+      midY,
+      topX - halfWidth * 0.92,
+      topY,
+    );
+    ctx.quadraticCurveTo(topX, topY - topRound, topX + halfWidth * 0.92, topY);
+    ctx.quadraticCurveTo(
+      midX + halfWidth * 1.15,
+      midY,
+      baseX + halfWidth,
+      baseY,
+    );
+    ctx.closePath();
+  }
+
+  draw(ctx, time = 0) {
     if (!this.alive) return;
 
-    const stemWidth = this.width * 0.4;
-    const topX = this.x - this.width / 2;
+    const topX = this.x;
     const topY = this.y;
+    const baseY = this.canvasHeight;
+    const halfWidth = this.width * 0.5;
+    const swayTop =
+      Math.sin(time * this.swaySpeed + this.swayPhase) * this.swayAmplitude;
+    const swayMid =
+      Math.sin(time * this.swaySpeed * 1.45 + this.swayPhase + 1.1) *
+      this.swayAmplitude *
+      0.6;
+    const topCenterX = this.x + swayTop;
+    const midCenterX = this.x + swayMid;
 
-    // Draw main cylinder
-    ctx.fillStyle = this.color;
-    ctx.fillRect(topX, topY, this.width, this.height);
+    // Minimal wavy stem
+    this.drawWavyStemPath(
+      ctx,
+      this.x,
+      baseY,
+      topY,
+      halfWidth,
+      midCenterX,
+      topCenterX,
+    );
+    ctx.fillStyle = "#22C55E";
+    ctx.fill();
 
-    // Draw darker edges for depth
-    ctx.strokeStyle = "#16A34A";
+    // Subtle edge
+    this.drawWavyStemPath(
+      ctx,
+      this.x,
+      baseY,
+      topY,
+      halfWidth,
+      midCenterX,
+      topCenterX,
+    );
+    ctx.strokeStyle = "rgba(21, 128, 61, 0.7)";
     ctx.lineWidth = 1;
-    ctx.strokeRect(topX, topY, this.width, this.height);
+    ctx.stroke();
 
-    // Glow effect at max growth
-    if (this.maxGrowthReached) {
-      ctx.strokeStyle = "rgba(34, 197, 94, 0.5)";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(topX - 2, topY - 2, this.width + 4, this.height + 4);
+    // Tiny top highlight
+    ctx.beginPath();
+    ctx.arc(topCenterX, topY + 2, this.width * 0.28, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(220, 252, 231, 0.5)";
+    ctx.fill();
+
+    // Soft glow while receiving sunlight
+    if (this.lightContact) {
+      const glowPadding = 2.3;
+      this.drawWavyStemPath(
+        ctx,
+        this.x,
+        baseY + glowPadding,
+        topY - glowPadding,
+        halfWidth + glowPadding,
+        midCenterX,
+        topCenterX,
+      );
+      ctx.strokeStyle = "rgba(187, 247, 208, 0.55)";
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
     }
   }
 }
