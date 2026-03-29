@@ -55,7 +55,7 @@ section .wave {
   left: 0;
   width: 100%;
   height: 100px;
-  background: url("../images/wave.png");
+  background: url("../public/wave.png");
   animation: animate 10s linear infinite;
   background-size: 1000px 100px;
 }

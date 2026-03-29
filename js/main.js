@@ -7,8 +7,8 @@ const modeIcon = document.getElementById("modeIcon");
 darkModeToggle.addEventListener("click", () => {
   document.body.classList.toggle("dark-mode");
   modeIcon.src = document.body.classList.contains("dark-mode")
-    ? "../images/sun.svg"
-    : "../images/moon.svg";
+    ? "../public/sun.svg"
+    : "../public/moon.svg";
 });
 
 const manualButton = document.getElementById("manualButton");
