@@ -336,13 +336,55 @@ function resolveNightParticleAlgaeInteractions() {
       if (dx * dx + dy * dy <= touchDist * touchDist) {
         particle.alive = false;
 
-        // 50% chance to multiply algae on oxygen contact at night.
-        if (Math.random() < 0.5) {
+        // 60% chance to multiply algae on oxygen contact at night.
+        if (Math.random() < 0.6) {
           spawnChildAlgae(algae);
         }
 
         break;
       }
+    }
+  }
+}
+
+function resolveDayParticleAlgaeInteractions() {
+  const restitution = 1; // perfectly elastic bounce
+
+  for (const particle of particles) {
+    if (!particle.alive) continue;
+
+    for (const algae of algaeArray) {
+      let dx = particle.x - algae.x;
+      let dy = particle.y - algae.y;
+      let distSq = dx * dx + dy * dy;
+      const touchDist = algae.radius + particle.size;
+
+      if (distSq >= touchDist * touchDist) continue;
+
+      if (distSq < 0.0001) {
+        dx = 0.001;
+        dy = 0;
+        distSq = dx * dx + dy * dy;
+      }
+
+      const dist = Math.sqrt(distSq);
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const overlap = touchDist - dist;
+
+      // Push particle away from algae
+      particle.x += nx * overlap;
+      particle.y += ny * overlap;
+
+      // Bounce velocity (reverse component along collision normal)
+      const velAlongNormal = particle.vx * nx + particle.vy * ny;
+      if (velAlongNormal < 0) {
+        const impulse = -(1 + restitution) * velAlongNormal;
+        particle.vx += impulse * nx;
+        particle.vy += impulse * ny;
+      }
+
+      break;
     }
   }
 }
@@ -381,7 +423,7 @@ function resolveParticleElasticCollisions(particles) {
       a.x -= nx * overlap * (b.mass / totalMass);
       a.y -= ny * overlap * (b.mass / totalMass);
       b.x += nx * overlap * (a.mass / totalMass);
-      b.y += ny * overlap * (a.mass / totalMass);
+      b.y += ny * overlap * (b.mass / totalMass);
 
       // Impulse-based elastic collision.
       const rvx = b.vx - a.vx;
@@ -403,6 +445,42 @@ function resolveParticleElasticCollisions(particles) {
   }
 }
 
+function resolveAlgaeCollisions(algaeArray) {
+  for (let i = 0; i < algaeArray.length; i++) {
+    const a = algaeArray[i];
+    if (!a.alive) continue;
+
+    for (let j = i + 1; j < algaeArray.length; j++) {
+      const b = algaeArray[j];
+      if (!b.alive) continue;
+
+      let dx = b.x - a.x;
+      let dy = b.y - a.y;
+      let distSq = dx * dx + dy * dy;
+      const minDist = a.radius + b.radius;
+
+      if (distSq >= minDist * minDist) continue;
+
+      if (distSq < 0.0001) {
+        dx = 0.001;
+        dy = 0;
+        distSq = dx * dx + dy * dy;
+      }
+
+      const dist = Math.sqrt(distSq);
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const overlap = minDist - dist;
+
+      // Position correction to push algae apart.
+      a.x -= nx * overlap * 0.5;
+      a.y -= ny * overlap * 0.5;
+      b.x += nx * overlap * 0.5;
+      b.y += ny * overlap * 0.5;
+    }
+  }
+}
+
 window.addEventListener("resize", resizeCanvas);
 rebuildSunRays();
 updateOxygenMeter();
@@ -410,9 +488,8 @@ updateOxygenMeter();
 canvas.addEventListener("click", (event) => {
   const rect = canvas.getBoundingClientRect();
   const x = event.clientX - rect.left;
-  const sandTopY = getPlantBaseY();
   const radius = 8 + Math.random() * 13;
-  const y = Math.min(event.clientY - rect.top, sandTopY - radius);
+  const y = event.clientY - rect.top;
 
   algaeArray.push(
     new Algae(
@@ -421,7 +498,7 @@ canvas.addEventListener("click", (event) => {
       radius,
       canvas.height * 0.27,
       3 + Math.random() * 2,
-      "#10B981 ",
+      "#10B981",
     ),
   );
 });
@@ -452,7 +529,12 @@ function animate(frameTime) {
     : sunRays.map((ray) => getSunRayState(ray, time));
 
   algaeArray.forEach((algae) => {
-    algae.update(algaeArray, time);
+    algae.update(deltaTime);
+  });
+
+  resolveAlgaeCollisions(algaeArray);
+
+  algaeArray.forEach((algae) => {
     // Sand collision: algae cannot go inside the sand.
     const maxAlgaeY = sandTopY - algae.radius;
     if (algae.y > maxAlgaeY) {
@@ -491,6 +573,8 @@ function animate(frameTime) {
 
   if (isNightMode) {
     resolveNightParticleAlgaeInteractions();
+  } else {
+    resolveDayParticleAlgaeInteractions();
   }
 
   particles.forEach((particle) => {
