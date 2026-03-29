@@ -1,4 +1,4 @@
-import Particle from "./particle.js";
+import Particle from "./Particle.js";
 
 export default class Plant {
   constructor(x, canvasHeight) {
